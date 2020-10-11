@@ -10,7 +10,7 @@ android {
     compileSdkVersion 30
     buildToolsVersion "29.0.3"
     defaultConfig {
-        applicationId "ru.mikhailskiy.intensiv"
+        applicationId "ru.rakhman.movifinder"
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
@@ -77,4 +77,10 @@ dependencies {
     implementation "com.xwray:groupie-kotlin-android-extensions:$rootProject.groupieVersion"
 
     implementation "com.jakewharton.timber:timber:$rootProject.timberVersion"
+
+    //Gson
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    //Retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.7.2'
 }
