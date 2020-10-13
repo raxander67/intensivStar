@@ -25,7 +25,7 @@ import ru.rakhman.moviefinder.ui.afterTextChanged
 import timber.log.Timber
 
 class FeedFragment : Fragment() {
-    private val TAG="FeedFragment"
+    private val TAG = "FeedFragment"
     private val adapter by lazy {
         GroupAdapter<GroupieViewHolder>()
     }
@@ -43,7 +43,6 @@ class FeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Добавляем recyclerView
-        movies_recycler_view.layoutManager = LinearLayoutManager(context)
         movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
 
         search_toolbar.search_edit_text.afterTextChanged {
@@ -54,21 +53,21 @@ class FeedFragment : Fragment() {
         }
 
         // Запросы по фильмам
-        var moviesList:List<Movie> //= listOf("")
-        val getNowPlayedMovies=MovieApiClient.apiClient.getNowPlayedMovies(API_KEY,"ru")
-        val getUpcomingMovies=MovieApiClient.apiClient.getUpcomingMovies(API_KEY,"ru")
-        val getPopularMovies=MovieApiClient.apiClient.getPopularMovies(API_KEY,"ru")
+        var moviesList: List<Movie> //= listOf("")
+        val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies(BuildConfig.THE_MOVIE_DATABASE_API, LANG)
+        val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(BuildConfig.THE_MOVIE_DATABASE_API, LANG)
+        val getPopularMovies = MovieApiClient.apiClient.getPopularMovies(BuildConfig.THE_MOVIE_DATABASE_API, LANG)
 
         // Получаем список текущих фильмов
-        getNowPlayedMovies.enqueue(object : Callback<MoviesResponse>{
+        getNowPlayedMovies.enqueue(object : Callback<MoviesResponse> {
             override fun onResponse(
                 call: Call<MoviesResponse>,
                 response: Response<MoviesResponse>
             ) {
                 // Получаем результат
-                moviesList=response.body()!!.results
-                moviesList.forEach { moviesList->Timber.d(moviesList.title.orEmpty()) }
-                val movies= listOf(
+                moviesList = response.body()!!.results
+                moviesList.forEach { moviesList -> Timber.d(moviesList.title.orEmpty()) }
+                val movies = listOf(
                     MainCardContainer(
                         R.string.now_played,
                         moviesList.map {
@@ -80,7 +79,7 @@ class FeedFragment : Fragment() {
                         }.toList()
                     )
                 )
-                movies_recycler_view.adapter =adapter.apply { addAll(movies) }
+                movies_recycler_view.adapter = adapter.apply { addAll(movies) }
             }
 
             override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
@@ -90,15 +89,15 @@ class FeedFragment : Fragment() {
         })
 
         //Получение новинок
-        getUpcomingMovies.enqueue(object : Callback<MoviesResponse>{
+        getUpcomingMovies.enqueue(object : Callback<MoviesResponse> {
             override fun onResponse(
                 call: Call<MoviesResponse>,
                 response: Response<MoviesResponse>
             ) {
                 // Получаем результат
-                moviesList=response.body()!!.results
-                moviesList.forEach { moviesList->Timber.d(moviesList.title.orEmpty()) }
-                val movies= listOf(
+                moviesList = response.body()!!.results
+                moviesList.forEach { moviesList -> Timber.d(moviesList.title.orEmpty()) }
+                val movies = listOf(
                     MainCardContainer(
                         R.string.upcoming,
                         moviesList.map {
@@ -110,7 +109,7 @@ class FeedFragment : Fragment() {
                         }.toList()
                     )
                 )
-                movies_recycler_view.adapter =adapter.apply { addAll(movies) }
+                movies_recycler_view.adapter = adapter.apply { addAll(movies) }
             }
 
             override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
@@ -120,15 +119,15 @@ class FeedFragment : Fragment() {
         })
 
         //Получение популярных фильмов
-        getPopularMovies.enqueue(object : Callback<MoviesResponse>{
+        getPopularMovies.enqueue(object : Callback<MoviesResponse> {
             override fun onResponse(
                 call: Call<MoviesResponse>,
                 response: Response<MoviesResponse>
             ) {
                 // Получаем результат
-                moviesList=response.body()!!.results
-                moviesList.forEach { moviesList->Timber.d(moviesList.title.orEmpty()) }
-                val movies= listOf(
+                moviesList = response.body()!!.results
+                moviesList.forEach { moviesList -> Timber.d(moviesList.title.orEmpty()) }
+                val movies = listOf(
                     MainCardContainer(
                         R.string.popular,
                         moviesList.map {
@@ -140,7 +139,7 @@ class FeedFragment : Fragment() {
                         }.toList()
                     )
                 )
-                movies_recycler_view.adapter =adapter.apply { addAll(movies) }
+                movies_recycler_view.adapter = adapter.apply { addAll(movies) }
             }
 
             override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
@@ -148,39 +147,6 @@ class FeedFragment : Fragment() {
                 Log.e(TAG, t.toString())
             }
         })
-
-/*
-        // Используя Мок-репозиторий получаем фэйковый список фильмов
-        val moviesList1 = listOf(
-            MainCardContainer(
-                R.string.recommended,
-                MockRepository.getMovies().map {
-                    MovieItem(it) { movie ->
-                        openMovieDetails(
-                            movie
-                        )
-                    }
-                }.toList()
-            )
-        )
-
-        movies_recycler_view.adapter = adapter.apply { addAll(moviesList1) }
-
-        // Используя Мок-репозиторий получаем фэйковый список фильмов
-        // Чтобы отобразить второй ряд фильмов
-        val newMoviesList = listOf(
-            MainCardContainer(
-                R.string.upcoming,
-                MockRepository.getMovies().map {
-                    MovieItem(it) { movie ->
-                        openMovieDetails(movie)
-                    }
-                }.toList()
-            )
-        )
-
-        adapter.apply { addAll(newMoviesList) }*/
-
     }
 
     private fun openMovieDetails(movie: Movie) {
@@ -194,7 +160,7 @@ class FeedFragment : Fragment() {
         }
 
         val bundle = Bundle()
-        bundle.putString("title", movie.title)
+        bundle.putString(TILE, movie.title)
         findNavController().navigate(R.id.movie_details_fragment, bundle, options)
     }
 
@@ -209,7 +175,7 @@ class FeedFragment : Fragment() {
         }
 
         val bundle = Bundle()
-        bundle.putString("search", searchText)
+        bundle.putString(SEARCH, searchText)
         findNavController().navigate(R.id.search_dest, bundle, options)
     }
 
@@ -224,6 +190,9 @@ class FeedFragment : Fragment() {
     }
 
     companion object {
-        const val API_KEY = BuildConfig.THE_MOVIE_DATABASE_API
+
+        const val TILE="title"
+        const val SEARCH="search"
+        const val LANG = "ru"
     }
 }

@@ -2,8 +2,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+// Creates a variable called keystorePropertiesFile, and initializes it to the
+// keystore.properties file.
 def keystorePropertiesFile = rootProject.file("keystore.properties")
+// Initializes a new Properties() object called keystoreProperties.
 def keystoreProperties = new Properties()
+// Loads the keystore.properties file into the keystoreProperties object.
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
@@ -20,9 +24,20 @@ android {
         buildConfigField 'String', 'THE_MOVIE_DATABASE_API', keystoreProperties['THE_MOVIE_DATABASE_API']
     }
     buildTypes {
+        debug {
+            buildConfigField "String", 'BASE_URL', '"https://api.themoviedb.org/3/"'
+        }
+        staging {
+//            buildConfigField "String", 'BASE_URL', '"https://api.themoviedb.org/3/"'
+        }
+
         release {
+            // These values are defined only for the release build, which
+            // is typically used for full builds and continuous builds.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            buildConfigField "String", 'BASE_URL', '"https://api.themoviedb.org/3/"'
         }
     }
 
@@ -79,8 +94,8 @@ dependencies {
     implementation "com.jakewharton.timber:timber:$rootProject.timberVersion"
 
     //Gson
-    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation "com.squareup.retrofit2:converter-gson:$rootProject.retrofit2ConverterGson"
     //Retrofit
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.7.2'
+    implementation "com.squareup.retrofit2:retrofit:$rootProject.retrofit"
+    implementation "com.squareup.okhttp3:logging-interceptor:$rootProject.loggingInterceptor"
 }

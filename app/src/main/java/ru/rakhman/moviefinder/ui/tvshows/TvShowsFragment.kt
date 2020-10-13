@@ -17,6 +17,7 @@ import kotlinx.android.synthetic.main.search_toolbar.view.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import ru.rakhman.moviefinder.BuildConfig
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
@@ -34,6 +35,7 @@ class TvShowsFragment : Fragment() {
     // TODO: Rename and change types of parameters
     private var param1: String? = null
     private var param2: String? = null
+
 
     private val adapter by lazy {
         GroupAdapter<GroupieViewHolder>()
@@ -57,14 +59,14 @@ class TvShowsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         // Добавляем recyclerView
-        movies_recycler_view.layoutManager = LinearLayoutManager(context)
         movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
 
         // Запросы по фильмам
         var moviesList:List<Movie> //= listOf("")
-        val getPopularTvShows= MovieApiClient.apiClient.getPopularTvShows(FeedFragment.API_KEY,"ru")
-        val getOnTheAirTvShows= MovieApiClient.apiClient.getOnTheAirTvShows(FeedFragment.API_KEY,"ru")
+        val getPopularTvShows= MovieApiClient.apiClient.getPopularTvShows(BuildConfig.THE_MOVIE_DATABASE_API,LANG)
+        val getOnTheAirTvShows= MovieApiClient.apiClient.getOnTheAirTvShows(BuildConfig.THE_MOVIE_DATABASE_API,LANG)
 
 
         // Получаем список телесериалов
@@ -139,7 +141,7 @@ class TvShowsFragment : Fragment() {
         }
 
         val bundle = Bundle()
-        bundle.putString("title", movie.title)
+        bundle.putString(TILE, movie.title)
         findNavController().navigate(R.id.movie_details_fragment, bundle, options)
     }
     companion object {
@@ -151,5 +153,8 @@ class TvShowsFragment : Fragment() {
                     putString(ARG_PARAM2, param2)
                 }
             }
+        const val TILE="title"
+        const val SEARCH="search"
+        const val LANG = "ru"
     }
 }

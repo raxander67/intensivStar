@@ -35,5 +35,5 @@ class Movie(
         get() = "https://image.tmdb.org/t/p/w500$field"
 
     val rating: Float
-        get() = voteAverage!!.div(2).toFloat()
+        get() = voteAverage?.div(2)?.toFloat() ?: 0.0F
 }
