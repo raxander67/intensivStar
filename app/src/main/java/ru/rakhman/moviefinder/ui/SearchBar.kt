@@ -7,6 +7,9 @@ import android.view.View
 import android.widget.EditText
 import android.widget.FrameLayout
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
+import io.reactivex.Observable
+import io.reactivex.ObservableOnSubscribe
 import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
 
@@ -20,6 +23,7 @@ class SearchBar @JvmOverloads constructor(
 
     private var hint: String = ""
     private var isCancelVisible: Boolean = true
+
 
     init {
         LayoutInflater.from(context).inflate(R.layout.search_toolbar, this)
@@ -58,5 +62,7 @@ class SearchBar @JvmOverloads constructor(
                 delete_text_button.visibility = View.GONE
             }
         }
+        search_edit_text.onTextChangedObservable()
+
     }
 }

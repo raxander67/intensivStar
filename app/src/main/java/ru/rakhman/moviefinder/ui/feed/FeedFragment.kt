@@ -1,28 +1,27 @@
 package ru.rakhman.moviefinder.ui.feed
 
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.feed_fragment.*
+import kotlinx.android.synthetic.main.feed_fragment.movies_recycler_view
 import kotlinx.android.synthetic.main.feed_header.*
+import kotlinx.android.synthetic.main.fragment_search.*
 import kotlinx.android.synthetic.main.search_toolbar.view.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import ru.rakhman.moviefinder.BuildConfig
 import ru.rakhman.moviefinder.R
-import ru.rakhman.moviefinder.data.MockRepository
 import ru.rakhman.moviefinder.data.Movie
-import ru.rakhman.moviefinder.data.MoviesResponse
 import ru.rakhman.moviefinder.network.MovieApiClient
-import ru.rakhman.moviefinder.ui.afterTextChanged
+import ru.rakhman.moviefinder.ui.onTextChangedObservable
+import ru.rakhman.moviefinder.ui.search.MoviesAdapter
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 class FeedFragment : Fragment() {
     private val TAG = "FeedFragment"
@@ -41,112 +40,114 @@ class FeedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Добавляем recyclerView
-        movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
-
-        search_toolbar.search_edit_text.afterTextChanged {
-            Timber.d(it.toString())
-            if (it.toString().length > 3) {
+        // реагируем на ввод поискового запроса
+        search_toolbar.search_edit_text
+            .onTextChangedObservable()
+            .map{it.trim()}
+            .filter { it.isNotEmpty() }
+            .filter{ it.length > 3}
+            .debounce(500, TimeUnit.MILLISECONDS)
+            .observeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
                 openSearch(it.toString())
-            }
-        }
+            }, {
+                Timber.e(it.toString() )
+            })
+
 
         // Запросы по фильмам
-        var moviesList: List<Movie> //= listOf("")
         val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies(BuildConfig.THE_MOVIE_DATABASE_API, LANG)
         val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(BuildConfig.THE_MOVIE_DATABASE_API, LANG)
         val getPopularMovies = MovieApiClient.apiClient.getPopularMovies(BuildConfig.THE_MOVIE_DATABASE_API, LANG)
 
-        // Получаем список текущих фильмов
-        getNowPlayedMovies.enqueue(object : Callback<MoviesResponse> {
-            override fun onResponse(
-                call: Call<MoviesResponse>,
-                response: Response<MoviesResponse>
-            ) {
-                // Получаем результат
-                moviesList = response.body()!!.results
-                moviesList.forEach { moviesList -> Timber.d(moviesList.title.orEmpty()) }
-                val movies = listOf(
-                    MainCardContainer(
-                        R.string.now_played,
-                        moviesList.map {
-                            MovieItem(it) { movie ->
-                                openMovieDetails(
-                                    movie
-                                )
-                            }
-                        }.toList()
-                    )
-                )
-                movies_recycler_view.adapter = adapter.apply { addAll(movies) }
-            }
 
-            override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
-                //Логируем ошибки
-                Log.e(TAG, t.toString())
-            }
-        })
+        // Получаем список текущих фильмов
+        getNowPlayedMovies
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { // Получаем результат
+                        it-> val moviesList=it.results
+                    moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
+                    val movies = listOf(
+                        MainCardContainer(
+                            R.string.now_played,
+                            moviesList.map {
+                                MovieItem(it) { movie ->
+                                    openMovieDetails(
+                                        movie
+                                    )
+                                }
+                            }.toList()
+                        )
+                    )
+                    movies_recycler_view.adapter = adapter.apply { addAll(movies) }
+                }
+                ,
+                {
+                    //error
+                    error->Timber.d(error.toString())
+                }
+            )
 
         //Получение новинок
-        getUpcomingMovies.enqueue(object : Callback<MoviesResponse> {
-            override fun onResponse(
-                call: Call<MoviesResponse>,
-                response: Response<MoviesResponse>
-            ) {
-                // Получаем результат
-                moviesList = response.body()!!.results
-                moviesList.forEach { moviesList -> Timber.d(moviesList.title.orEmpty()) }
-                val movies = listOf(
-                    MainCardContainer(
-                        R.string.upcoming,
-                        moviesList.map {
-                            MovieItem(it) { movie ->
-                                openMovieDetails(
-                                    movie
-                                )
-                            }
-                        }.toList()
+        getUpcomingMovies
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { // Получаем результат
+                        it-> val moviesList=it.results
+                    moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
+                    val movies = listOf(
+                        MainCardContainer(
+                            R.string.upcoming,
+                            moviesList.map {
+                                MovieItem(it) { movie ->
+                                    openMovieDetails(
+                                        movie
+                                    )
+                                }
+                            }.toList()
+                        )
                     )
-                )
-                movies_recycler_view.adapter = adapter.apply { addAll(movies) }
-            }
-
-            override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
-                //Логируем ошибки
-                Log.e(TAG, t.toString())
-            }
-        })
+                    movies_recycler_view.adapter = adapter.apply { addAll(movies) }
+                }
+                ,
+                {
+                    //error
+                        error->Timber.d(error.toString())
+                }
+            )
 
         //Получение популярных фильмов
-        getPopularMovies.enqueue(object : Callback<MoviesResponse> {
-            override fun onResponse(
-                call: Call<MoviesResponse>,
-                response: Response<MoviesResponse>
-            ) {
-                // Получаем результат
-                moviesList = response.body()!!.results
-                moviesList.forEach { moviesList -> Timber.d(moviesList.title.orEmpty()) }
-                val movies = listOf(
-                    MainCardContainer(
-                        R.string.popular,
-                        moviesList.map {
-                            MovieItem(it) { movie ->
-                                openMovieDetails(
-                                    movie
-                                )
-                            }
-                        }.toList()
+        getPopularMovies
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { // Получаем результат
+                        it-> val moviesList=it.results
+                    moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
+                    val movies = listOf(
+                        MainCardContainer(
+                            R.string.popular,
+                            moviesList.map {
+                                MovieItem(it) { movie ->
+                                    openMovieDetails(
+                                        movie
+                                    )
+                                }
+                            }.toList()
+                        )
                     )
-                )
-                movies_recycler_view.adapter = adapter.apply { addAll(movies) }
-            }
-
-            override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
-                //Логируем ошибки
-                Log.e(TAG, t.toString())
-            }
-        })
+                    movies_recycler_view.adapter = adapter.apply { addAll(movies) }
+                }
+                ,
+                {
+                    //error
+                        error->Timber.d(error.toString())
+                }
+            )
     }
 
     private fun openMovieDetails(movie: Movie) {

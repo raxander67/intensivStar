@@ -5,16 +5,35 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.xwray.groupie.GroupAdapter
+import com.xwray.groupie.GroupieViewHolder
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
+import kotlinx.android.synthetic.main.search_toolbar.view.*
+import ru.rakhman.moviefinder.BuildConfig
 import ru.rakhman.moviefinder.R
+import ru.rakhman.moviefinder.network.MovieApiClient
+import ru.rakhman.moviefinder.ui.feed.FeedFragment
+import ru.rakhman.moviefinder.ui.feed.MainCardContainer
+import ru.rakhman.moviefinder.ui.feed.MovieItem
+import ru.rakhman.moviefinder.ui.onTextChangedObservable
+import timber.log.Timber
+import java.util.concurrent.TimeUnit
+
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
 
 class SearchFragment : Fragment() {
+    private val LANG="ru"
     private var param1: String? = null
     private var param2: String? = null
 
+    private val adapter by lazy {
+        GroupAdapter<GroupieViewHolder>()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -35,6 +54,31 @@ class SearchFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val searchTerm = requireArguments().getString("search")
         search_toolbar.setText(searchTerm)
+
+        // Запрос по фильмам
+        search_toolbar.search_edit_text
+            .onTextChangedObservable()
+            .map{it.trim()}
+            .doOnNext { Timber.d("погнали") }
+            .filter { it.isNotEmpty() }
+            .filter{it.length > 3}
+            .debounce(500, TimeUnit.MILLISECONDS)
+            .observeOn(Schedulers.io())
+            .flatMapSingle {
+                MovieApiClient.apiClient.searchByQuery(
+                    BuildConfig.THE_MOVIE_DATABASE_API,
+                    "ru",
+                    it
+                )
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                    val moviesList=it.results
+                moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
+                movies_recycler_view.adapter = MoviesAdapter(moviesList, R.layout.list_item_movie)
+            }, {
+                Timber.e(it.toString() )
+            })
     }
 
     companion object {
