@@ -66,9 +66,7 @@ class SearchFragment : Fragment() {
             .observeOn(Schedulers.io())
             .flatMapSingle {
                 MovieApiClient.apiClient.searchByQuery(
-                    BuildConfig.THE_MOVIE_DATABASE_API,
-                    "ru",
-                    it
+                    query = it
                 )
             }
             .observeOn(AndroidSchedulers.mainThread())

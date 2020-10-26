@@ -5,19 +5,19 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
+import androidx.navigation.fragment.findNavController
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.feed_fragment.*
 import ru.rakhman.moviefinder.BuildConfig
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
+import ru.rakhman.moviefinder.data.MoviesResponse
 import ru.rakhman.moviefinder.network.MovieApiClient
 import ru.rakhman.moviefinder.ui.feed.MainCardContainer
 import ru.rakhman.moviefinder.ui.feed.MovieItem
+import ru.rakhman.moviefinder.ui.extension.SingleExtension
 import timber.log.Timber
 
 private const val ARG_PARAM1 = "param1"
@@ -59,63 +59,54 @@ class TvShowsFragment : Fragment() {
 
         // Получаем список телесериалов
         getPopularTvShows
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+            .compose (SingleExtension())
             .subscribe(
-                { // Получаем результат
-                        it-> val moviesList=it.results
-                    moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
-                    val movies = listOf(
-                        MainCardContainer(
-                            R.string.tv_show_popular,
-                            moviesList.map {
-                                MovieItem(it) { movie ->
-                                    openMovieDetails(
-                                        movie
-                                    )
-                                }
-                            }.toList()
-                        )
-                    )
-                    movies_recycler_view.adapter = adapter.apply { addAll(movies) }
-                }
+                // Получаем результат
+                getQueryToView(R.string.tv_show_popular)
                 ,
-                {
-                    //error
-                        error->Timber.d(error.toString())
-                }
+                //error
+                errorLog()
             )
 
         // Получаем список телесериалов, которые сейчас в эфире
         getOnTheAirTvShows
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+            .compose (SingleExtension())
             .subscribe(
-                { // Получаем результат
-                        it-> val moviesList=it.results
-                    moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
-                    val movies = listOf(
-                        MainCardContainer(
-                            R.string.tv_show_on_air,
-                            moviesList.map {
-                                MovieItem(it) { movie ->
-                                    openMovieDetails(
-                                        movie
-                                    )
-                                }
-                            }.toList()
-                        )
-                    )
-                    movies_recycler_view.adapter = adapter.apply { addAll(movies) }
-                }
+                // Получаем результат
+                getQueryToView(R.string.tv_show_on_air)
                 ,
-                {
-                    //error
-                        error->Timber.d(error.toString())
-                }
+                //error
+                errorLog()
             )
     }
 
+    private fun errorLog(): (t: Throwable) -> Unit {
+        return {
+                error ->
+            Timber.d(error.toString())
+        }
+    }
+
+    private fun getQueryToView(rString:Int): (t: MoviesResponse) -> Unit {
+        return {
+                it ->
+            val moviesList = it.results
+            moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
+            val movies = listOf(
+                MainCardContainer(
+                    rString,
+                    moviesList.map {
+                        MovieItem(it) { movie ->
+                            openMovieDetails(
+                                movie
+                            )
+                        }
+                    }.toList()
+                )
+            )
+            movies_recycler_view.adapter = adapter.apply { addAll(movies) }
+        }
+    }
     private fun openMovieDetails(movie: Movie) {
         val options = navOptions {
             anim {
@@ -127,9 +118,10 @@ class TvShowsFragment : Fragment() {
         }
 
         val bundle = Bundle()
-        bundle.putString(TILE, movie.title)
+        bundle.putString(TvShowsFragment.TILE, movie.title)
         findNavController().navigate(R.id.movie_details_fragment, bundle, options)
     }
+
     companion object {
         @JvmStatic
         fun newInstance(param1: String, param2: String) =
