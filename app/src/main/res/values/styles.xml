@@ -21,5 +21,27 @@
         <item name="cornerSize">10%</item>
     </style>
 
+    <style name="Wrap_content">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+    <style name="WidthMatch_HeightWrap">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <style name="TextViewTitle" parent="Wrap_content">
+
+        <item name="android:layout_gravity">top</item>
+        <item name="android:paddingRight">@dimen/dp_16</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Text" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">16sp</item>
+    </style>
+    <style name="Text.White" >
+        <item name="android:textColor">@color/white</item>
+    </style>
 
 </resources>
