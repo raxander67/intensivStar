@@ -70,9 +70,9 @@ class FeedFragment : Fragment() {
         lateinit var movies :List<MainCardContainer>
 
         Observable.zip(
-            Observable.just(getNowPlayedMovies),
-            Observable.just(getUpcomingMovies),
-            Observable.just(getPopularMovies),
+            getNowPlayedMovies,
+            getUpcomingMovies,
+            getPopularMovies,
             Function3 { t1, t2, t3 ->
                 return@Function3 listOf(
                     // Получаем список текущих фильмов
