@@ -9,6 +9,9 @@ import androidx.navigation.navOptions
 import androidx.navigation.fragment.findNavController
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
+import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.BiFunction
 import kotlinx.android.synthetic.main.feed_fragment.*
 import ru.rakhman.moviefinder.BuildConfig
 import ru.rakhman.moviefinder.R
@@ -28,6 +31,8 @@ class TvShowsFragment : Fragment() {
     private var param1: String? = null
     private var param2: String? = null
 
+    private val language by lazy { resources.getString(R.string.language) }
+    private var compositeDisposable = CompositeDisposable()
 
     private val adapter by lazy {
         GroupAdapter<GroupieViewHolder>()
@@ -52,44 +57,71 @@ class TvShowsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Запросы по фильмам
-        val getPopularTvShows= MovieApiClient.apiClient.getPopularTvShows(BuildConfig.THE_MOVIE_DATABASE_API,LANG)
-        val getOnTheAirTvShows= MovieApiClient.apiClient.getOnTheAirTvShows(BuildConfig.THE_MOVIE_DATABASE_API,LANG)
+        downloadAll()
+    }
 
+    private fun downloadAll() {
+        // Запросы по сериалам
+        val getPopularTvShows =
+            MovieApiClient.apiClient.getPopularTvShows(language = language)
+        val getOnTheAirTvShows =
+            MovieApiClient.apiClient.getOnTheAirTvShows(language = language)
 
-        // Получаем список телесериалов
-        getPopularTvShows
-            .compose (SingleExtension())
-            .subscribe(
-                // Получаем результат
-                getQueryToView(R.string.tv_show_popular)
-                ,
-                //error
-                errorLog()
+        compositeDisposable.add(
+            Single.zip(
+                getPopularTvShows,
+                getOnTheAirTvShows,
+                BiFunction { t1: MoviesResponse, t2: MoviesResponse ->
+                    return@BiFunction listOf(
+                        // Получаем список телесериалов
+                        MainCardContainer(R.string.tv_show_popular,
+                            t1.results.map { movie ->
+                                MovieItem(movie) { movie ->
+                                    openMovieDetails(
+                                        movie
+                                    )
+                                }
+                            }
+                                .toList()
+                        ),
+                        // Получаем список телесериалов, которые сейчас в эфире
+                        MainCardContainer(R.string.tv_show_on_air,
+                            t2.results.map { movie ->
+                                MovieItem(movie) { movie ->
+                                    openMovieDetails(
+                                        movie
+                                    )
+                                }
+                            }
+                                .toList()
+                        )
+                    )
+                }
             )
+                .compose(SingleExtension())
+                .doOnSubscribe { progress_bar.visibility = View.VISIBLE }
+                .doOnTerminate { progress_bar.visibility = View.GONE }
+                .subscribe(
+                    {
+                        movies_recycler_view.adapter = adapter.apply { addAll(it) }
+                    },
+                    {
+                        errorLog()
+                    }
+                )
 
-        // Получаем список телесериалов, которые сейчас в эфире
-        getOnTheAirTvShows
-            .compose (SingleExtension())
-            .subscribe(
-                // Получаем результат
-                getQueryToView(R.string.tv_show_on_air)
-                ,
-                //error
-                errorLog()
-            )
+        )
+
     }
 
     private fun errorLog(): (t: Throwable) -> Unit {
-        return {
-                error ->
+        return { error ->
             Timber.d(error.toString())
         }
     }
 
-    private fun getQueryToView(rString:Int): (t: MoviesResponse) -> Unit {
-        return {
-                it ->
+    private fun getQueryToView(rString: Int): (t: MoviesResponse) -> Unit {
+        return { it ->
             val moviesList = it.results
             moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
             val movies = listOf(
@@ -107,6 +139,7 @@ class TvShowsFragment : Fragment() {
             movies_recycler_view.adapter = adapter.apply { addAll(movies) }
         }
     }
+
     private fun openMovieDetails(movie: Movie) {
         val options = navOptions {
             anim {
@@ -131,7 +164,7 @@ class TvShowsFragment : Fragment() {
                     putString(ARG_PARAM2, param2)
                 }
             }
-        const val TILE="title"
-        const val LANG = "ru"
+
+        const val TILE = "title"
     }
 }

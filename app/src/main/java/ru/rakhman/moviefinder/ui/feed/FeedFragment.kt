@@ -2,6 +2,7 @@ package ru.rakhman.moviefinder.ui.feed
 
 import android.os.Bundle
 import android.view.*
+import android.view.View.GONE
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
@@ -11,7 +12,7 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function3
-import kotlinx.android.synthetic.main.feed_fragment.movies_recycler_view
+import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
 import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
@@ -26,7 +27,8 @@ import java.util.concurrent.TimeUnit
 
 class FeedFragment : Fragment() {
     private val TAG = "FeedFragment"
-    private val language=resources.getString(R.string.language)
+    private val language by lazy { resources.getString(R.string.language) }
+    private var compositeDisposable = CompositeDisposable()
     private val adapter by lazy {
         GroupAdapter<GroupieViewHolder>()
     }
@@ -42,8 +44,13 @@ class FeedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        executeSearch()
+        downloadAll()
+    }
+
+    private fun executeSearch() {
         // реагируем на ввод поискового запроса
-        search_toolbar.search_edit_text
+        compositeDisposable.add(search_toolbar.search_edit_text
             .onTextChangedObservable()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -55,70 +62,73 @@ class FeedFragment : Fragment() {
             }, {
                 Timber.e(it.toString())
             })
-
-        downloadAll()
-
+        )
     }
 
     private fun downloadAll() {
-        var compositeDisposable = CompositeDisposable()
         // Запросы по фильмам
         val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies(language = language)
         val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(language = language)
         val getPopularMovies = MovieApiClient.apiClient.getPopularMovies(language = language)
 
-        lateinit var movies :List<MainCardContainer>
-
-        Observable.zip(
+        compositeDisposable.add(Single.zip(
             getNowPlayedMovies,
             getUpcomingMovies,
             getPopularMovies,
-            Function3 { t1, t2, t3 ->
+            Function3 { t1: MoviesResponse, t2: MoviesResponse, t3: MoviesResponse ->
                 return@Function3 listOf(
                     // Получаем список текущих фильмов
                     MainCardContainer(R.string.now_played,
-                        t1.results.map {movie-> MovieItem(movie) { movie -> openMovieDetails(movie )  } }.toList())
-                        ,
+                        t1.results.map { movie ->
+                            MovieItem(movie) { movie ->
+                                openMovieDetails(
+                                    movie
+                                )
+                            }
+                        }
+                            .toList()
+                    ),
                     //Получение новинок
                     MainCardContainer(R.string.upcoming,
-                        t1.results.map {movie-> MovieItem(movie) { movie -> openMovieDetails(movie )  } }.toList())
-                        ,
+                        t2.results.map { movie ->
+                            MovieItem(movie) { movie ->
+                                openMovieDetails(
+                                    movie
+                                )
+                            }
+                        }
+                            .toList()
+                    ),
                     //Получение популярных фильмов
                     MainCardContainer(R.string.popular,
-                        t1.results.map {movie-> MovieItem(movie) { movie -> openMovieDetails(movie )  } }.toList())
+                        t3.results.map { movie ->
+                            MovieItem(movie) { movie ->
+                                openMovieDetails(
+                                    movie
+                                )
+                            }
+                        }
+                            .toList()
+                    )
                 )
             }
         )
+            .compose(SingleExtension())
+            .doOnSubscribe { progress_bar.visibility = View.VISIBLE }
+            .doOnTerminate { progress_bar.visibility = View.GONE }
             .subscribe(
-                { movies_recycler_view.adapter = adapter.apply { addAll(movies) } }
-            ,
-                {errorLog()}
-            )
+                {
+                    movies_recycler_view.adapter = adapter.apply { addAll(it) }
+                },
+                {
+                    errorLog()
+                }
+            ))
     }
 
     private fun errorLog(): (t: Throwable) -> Unit {
         return { error ->
             Timber.d(error.toString())
-        }
-    }
-
-    private fun getQueryToView(rString: Int): (t: MoviesResponse) -> Unit {
-        return { it ->
-//            val moviesList = it.results
-            /*moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }*/
-            val movies = listOf(
-                MainCardContainer(
-                    rString,
-                    it.results.map {
-                        MovieItem(it) { movie ->
-                            openMovieDetails(
-                                movie
-                            )
-                        }
-                    }.toList()
-                )
-            )
-//            movies_recycler_view.adapter = adapter.apply { addAll(movies) }
         }
     }
 
@@ -154,7 +164,8 @@ class FeedFragment : Fragment() {
 
     override fun onStop() {
         super.onStop()
-        search_toolbar.clear()
+//        search_toolbar.clear()
+        compositeDisposable.clear()
     }
 
 
