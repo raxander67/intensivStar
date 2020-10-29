@@ -114,29 +114,14 @@ class TvShowsFragment : Fragment() {
 
     }
 
+    override fun onStop() {
+        super.onStop()
+        compositeDisposable.clear()
+    }
+
     private fun errorLog(): (t: Throwable) -> Unit {
         return { error ->
             Timber.d(error.toString())
-        }
-    }
-
-    private fun getQueryToView(rString: Int): (t: MoviesResponse) -> Unit {
-        return { it ->
-            val moviesList = it.results
-            moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
-            val movies = listOf(
-                MainCardContainer(
-                    rString,
-                    moviesList.map {
-                        MovieItem(it) { movie ->
-                            openMovieDetails(
-                                movie
-                            )
-                        }
-                    }.toList()
-                )
-            )
-            movies_recycler_view.adapter = adapter.apply { addAll(movies) }
         }
     }
 
