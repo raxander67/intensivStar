@@ -1,6 +1,7 @@
 package ru.rakhman.moviefinder.ui.feed
 
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.view.View.GONE
 import androidx.fragment.app.Fragment
@@ -11,6 +12,7 @@ import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Function
 import io.reactivex.functions.Function3
 import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
@@ -18,6 +20,8 @@ import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
+import ru.rakhman.moviefinder.data.mock.MockMovieItem
+import ru.rakhman.moviefinder.data.mock.MockRepository
 import ru.rakhman.moviefinder.network.MovieApiClient
 import ru.rakhman.moviefinder.ui.onTextChangedObservable
 import ru.rakhman.moviefinder.ui.extension.ObservableExtension
@@ -125,6 +129,7 @@ class FeedFragment : Fragment() {
                 }
             ))
     }
+
 
     private fun errorLog(): (t: Throwable) -> Unit {
         return { error ->
