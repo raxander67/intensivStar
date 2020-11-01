@@ -1,18 +1,27 @@
 package ru.rakhman.moviefinder.ui.feed
 
 import android.os.Bundle
+import android.util.Log
 import android.view.*
+import android.view.View.GONE
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
-import kotlinx.android.synthetic.main.feed_fragment.movies_recycler_view
+import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Function
+import io.reactivex.functions.Function3
+import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
 import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
+import ru.rakhman.moviefinder.data.mock.MockMovieItem
+import ru.rakhman.moviefinder.data.mock.MockRepository
 import ru.rakhman.moviefinder.network.MovieApiClient
 import ru.rakhman.moviefinder.ui.onTextChangedObservable
 import ru.rakhman.moviefinder.ui.extension.ObservableExtension
@@ -22,6 +31,8 @@ import java.util.concurrent.TimeUnit
 
 class FeedFragment : Fragment() {
     private val TAG = "FeedFragment"
+    private val language by lazy { resources.getString(R.string.language) }
+    private var compositeDisposable = CompositeDisposable()
     private val adapter by lazy {
         GroupAdapter<GroupieViewHolder>()
     }
@@ -37,87 +48,95 @@ class FeedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        executeSearch()
+        downloadAll()
+    }
+
+    private fun executeSearch() {
         // реагируем на ввод поискового запроса
-        search_toolbar.search_edit_text
+        compositeDisposable.add(search_toolbar.search_edit_text
             .onTextChangedObservable()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .filter { it.length > 3 }
             .debounce(500, TimeUnit.MILLISECONDS)
-            .compose (ObservableExtension())
+            .compose(ObservableExtension())
             .subscribe({
                 openSearch(it.toString())
             }, {
                 Timber.e(it.toString())
             })
-
-
-        // Запросы по фильмам
-        val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies()
-        val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies()
-        val getPopularMovies = MovieApiClient.apiClient.getPopularMovies()
-
-
-        // Получаем список текущих фильмов
-        getNowPlayedMovies
-            .compose (SingleExtension())
-            .subscribe(
-                // Получаем результат
-                getQueryToView(R.string.now_played)
-                ,
-                //error
-                errorLog()
-            )
-
-        //Получение новинок
-        getUpcomingMovies
-            .compose (SingleExtension())
-            .subscribe(
-                // Получаем результат
-                getQueryToView(R.string.upcoming),
-                //error
-                errorLog()
-            )
-
-        //Получение популярных фильмов
-        getPopularMovies
-            .compose (SingleExtension())
-            .subscribe(
-                // Получаем результат
-                getQueryToView(R.string.popular)
-                ,
-                //error
-                errorLog()
-            )
+        )
     }
 
+    private fun downloadAll() {
+        // Запросы по фильмам
+        val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies(language = language)
+        val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(language = language)
+        val getPopularMovies = MovieApiClient.apiClient.getPopularMovies(language = language)
+
+        compositeDisposable.add(Single.zip(
+            getNowPlayedMovies,
+            getUpcomingMovies,
+            getPopularMovies,
+            Function3 { t1: MoviesResponse, t2: MoviesResponse, t3: MoviesResponse ->
+                return@Function3 listOf(
+                    // Получаем список текущих фильмов
+                    MainCardContainer(R.string.now_played,
+                        t1.results.map { movie ->
+                            MovieItem(movie) { movie ->
+                                openMovieDetails(
+                                    movie
+                                )
+                            }
+                        }
+                            .toList()
+                    ),
+                    //Получение новинок
+                    MainCardContainer(R.string.upcoming,
+                        t2.results.map { movie ->
+                            MovieItem(movie) { movie ->
+                                openMovieDetails(
+                                    movie
+                                )
+                            }
+                        }
+                            .toList()
+                    ),
+                    //Получение популярных фильмов
+                    MainCardContainer(R.string.popular,
+                        t3.results.map { movie ->
+                            MovieItem(movie) { movie ->
+                                openMovieDetails(
+                                    movie
+                                )
+                            }
+                        }
+                            .toList()
+                    )
+                )
+            }
+        )
+            .compose(SingleExtension())
+            .doOnSubscribe { progress_bar.visibility = View.VISIBLE }
+            .doOnTerminate { progress_bar.visibility = View.GONE }
+            .subscribe(
+                {
+                    movies_recycler_view.adapter = adapter.apply { addAll(it) }
+                },
+                {
+                    errorLog()
+                }
+            ))
+    }
+
+
     private fun errorLog(): (t: Throwable) -> Unit {
-        return {
-                error ->
+        return { error ->
             Timber.d(error.toString())
         }
     }
 
-    private fun getQueryToView(rString:Int): (t: MoviesResponse) -> Unit {
-        return {
-                it ->
-            val moviesList = it.results
-            moviesList.forEach { m -> Timber.d(m.title.orEmpty()) }
-            val movies = listOf(
-                MainCardContainer(
-                    rString,
-                    moviesList.map {
-                        MovieItem(it) { movie ->
-                            openMovieDetails(
-                                movie
-                            )
-                        }
-                    }.toList()
-                )
-            )
-            movies_recycler_view.adapter = adapter.apply { addAll(movies) }
-        }
-    }
     private fun openMovieDetails(movie: Movie) {
         val options = navOptions {
             anim {
@@ -150,7 +169,8 @@ class FeedFragment : Fragment() {
 
     override fun onStop() {
         super.onStop()
-        search_toolbar.clear()
+//        search_toolbar.clear()
+        compositeDisposable.clear()
     }
 
 

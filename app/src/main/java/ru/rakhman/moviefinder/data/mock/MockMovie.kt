@@ -1,8 +1,6 @@
-package ru.rakhman.moviefinder.data
+package ru.rakhman.moviefinder.data.mock
 
-import com.google.gson.annotations.SerializedName
-
-class Movie_tmp(
+class MockMovie (
     var title: String? = "",
     var voteAverage: Double = 0.0
 ) {
