@@ -1,18 +1,14 @@
 package ru.rakhman.moviefinder.ui.feed
 
 import android.os.Bundle
-import android.util.Log
 import android.view.*
-import android.view.View.GONE
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.Function
 import io.reactivex.functions.Function3
 import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
@@ -20,8 +16,7 @@ import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
-import ru.rakhman.moviefinder.data.mock.MockMovieItem
-import ru.rakhman.moviefinder.data.mock.MockRepository
+import ru.rakhman.moviefinder.db.convertMovie
 import ru.rakhman.moviefinder.network.MovieApiClient
 import ru.rakhman.moviefinder.ui.onTextChangedObservable
 import ru.rakhman.moviefinder.ui.extension.ObservableExtension
@@ -50,6 +45,9 @@ class FeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         executeSearch()
         downloadAll()
+
+        // Test
+
     }
 
     private fun executeSearch() {
@@ -148,7 +146,9 @@ class FeedFragment : Fragment() {
         }
 
         val bundle = Bundle()
+
         bundle.putString(TILE, movie.title)
+        bundle.putString(OVERVIEW, movie.overview)
         findNavController().navigate(R.id.movie_details_fragment, bundle, options)
     }
 
@@ -174,6 +174,7 @@ class FeedFragment : Fragment() {
     }
 
 
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_menu, menu)
     }
@@ -181,6 +182,7 @@ class FeedFragment : Fragment() {
     companion object {
 
         const val TILE = "title"
+        const val OVERVIEW = "overview"
         const val SEARCH = "search"
     }
 }

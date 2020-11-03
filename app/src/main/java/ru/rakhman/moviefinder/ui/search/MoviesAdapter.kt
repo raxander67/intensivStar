@@ -16,7 +16,7 @@ class MoviesAdapter(
 ) : RecyclerView.Adapter<MoviesAdapter.MovieViewHolder>() {
 
     class MovieViewHolder(v: View) : RecyclerView.ViewHolder(v) {
-        internal var movieTitle: TextView = v.findViewById(R.id.title)
+        internal var movieTitle: TextView = v.findViewById(R.id.title_movie)
         internal var data: TextView = v.findViewById(R.id.subtitle)
         internal var movieDescription: TextView = v.findViewById(R.id.description)
         internal var rating: TextView = v.findViewById(R.id.rating)

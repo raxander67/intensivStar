@@ -3,14 +3,13 @@ package ru.rakhman.moviefinder.data
 import com.google.gson.annotations.SerializedName
 
 class Movie(
-    posterPath: String,
     @SerializedName("adult")
     var isAdult: Boolean,
     @SerializedName("overview")
     var overview: String?,
     @SerializedName("release_date")
     var releaseDate: String?,
-    genreIds: List<Int>,
+    var genreIds: List<Int>,
     @SerializedName("id")
     var id: Int?,
     @SerializedName("original_title")

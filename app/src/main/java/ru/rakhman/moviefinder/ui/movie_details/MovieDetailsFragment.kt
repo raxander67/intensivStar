@@ -1,19 +1,31 @@
 package ru.rakhman.moviefinder.ui.movie_details
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
+import kotlinx.android.synthetic.main.movie_details_fragment.*
 import ru.rakhman.moviefinder.R
+import ru.rakhman.moviefinder.data.Movie
+import ru.rakhman.moviefinder.db.MovieDatabase
+import ru.rakhman.moviefinder.db.MovieEntity
+import ru.rakhman.moviefinder.db.convertMovie
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
+
+private const val TILE = "title"
+private const val OVERVIEW = "overview"
 
 class MovieDetailsFragment : Fragment() {
 
     private var param1: String? = null
     private var param2: String? = null
+    private var title: String? = null
+    private var overview: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +42,51 @@ class MovieDetailsFragment : Fragment() {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.movie_details_fragment, container, false)
     }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        title = requireArguments().getString(TILE)
+        overview = requireArguments().getString(OVERVIEW)
+
+        title_movie.text = title
+        overview_text_view.text = overview
+    }
+
+    fun onCheckboxClicked(view: View) {
+        if (view is CheckBox) {
+            val checked: Boolean = view.isChecked
+            val  context: Context? = getContext()
+            val movie = Movie(
+                isAdult = false,
+                overview = overview,
+                releaseDate = "",
+                genreIds = listOf<Int>(1, 2, 3),
+                id = 123,
+                originalTitle = "",
+                originalLanguage = "",
+                title = title,
+                backdropPath = "",
+                popularity = 5.7,
+                voteCount = null,
+                video = true,
+                voteAverage = 5.9
+            )
+            val db= context?.let { MovieDatabase.get(it).movieDao() }
+            if (checked) {
+              val  convMovie : MovieEntity =convertMovie(movie)
+              val listConvMovie= listOf<MovieEntity>(convMovie)
+                if (db != null) {
+                    db.save(listConvMovie)
+                }
+            } else {
+                // delete this
+
+            }
+
+        }
+    }
+
 
     companion object {
 
