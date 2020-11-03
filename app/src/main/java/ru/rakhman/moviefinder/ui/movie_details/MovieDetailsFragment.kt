@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.Toast
 import kotlinx.android.synthetic.main.movie_details_fragment.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
@@ -51,40 +52,46 @@ class MovieDetailsFragment : Fragment() {
 
         title_movie.text = title
         overview_text_view.text = overview
+
+        favorite_checkBox.setOnClickListener { onCheckboxClicked() }
     }
 
-    fun onCheckboxClicked(view: View) {
-        if (view is CheckBox) {
-            val checked: Boolean = view.isChecked
-            val  context: Context? = getContext()
-            val movie = Movie(
-                isAdult = false,
-                overview = overview,
-                releaseDate = "",
-                genreIds = listOf<Int>(1, 2, 3),
-                id = 123,
-                originalTitle = "",
-                originalLanguage = "",
-                title = title,
-                backdropPath = "",
-                popularity = 5.7,
-                voteCount = null,
-                video = true,
-                voteAverage = 5.9
-            )
-            val db= context?.let { MovieDatabase.get(it).movieDao() }
-            if (checked) {
-              val  convMovie : MovieEntity =convertMovie(movie)
-              val listConvMovie= listOf<MovieEntity>(convMovie)
-                if (db != null) {
-                    db.save(listConvMovie)
-                }
-            } else {
-                // delete this
+    fun onCheckboxClicked() {
 
-            }
+        val checked: Boolean = favorite_checkBox.isChecked
+        val context: Context? = getContext()
+        val movie = Movie(
+            isAdult = false,
+            overview = overview,
+            releaseDate = "",
+            genreIds = listOf<Int>(1, 2, 3),
+            id = 123,
+            originalTitle = "",
+            originalLanguage = "",
+            title = title,
+            backdropPath = "",
+            popularity = 5.7,
+            voteCount = null,
+            video = true,
+            voteAverage = 5.9
+        )
+        val db = context?.let { MovieDatabase.get(it).movieDao() }
+        /*if (checked) {
+            Toast.makeText(
+                context,
+                "Test",
+                Toast.LENGTH_LONG
+            ).show()*/
+        val convMovie: MovieEntity = convertMovie(movie)
+        val listConvMovie = listOf<MovieEntity>(convMovie)
+        if (db != null) {
+            db.save(listConvMovie)
+        } else {
+            // delete this
 
         }
+
+
     }
 
 
