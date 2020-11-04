@@ -7,7 +7,7 @@ import ru.rakhman.moviefinder.data.Movie
 fun convertMovie(movie: Movie) : MovieEntity {
     return MovieEntity(
         movie.id,
-        movie.genreIds,
+        /*movie.genreIds,*/
         movie.title,
         movie.posterPath,
         movie.isAdult,

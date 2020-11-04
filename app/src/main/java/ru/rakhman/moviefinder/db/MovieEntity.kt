@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
 data class MovieEntity(
     @PrimaryKey
     val id: Int?,
-    val movieGenreId: List<Int>,
+    /*val movieGenreId: List<Int>,*/
     @ColumnInfo(name = "title")
     val title: String?,
     @ColumnInfo(name="poster_path")
@@ -35,4 +35,10 @@ data class MovieEntity(
     val video: Boolean?,
     @ColumnInfo(name = "vote_average")
     val voteAverage: Double?
+)
+@Entity(tableName = "genre")
+data class Genre(
+    @PrimaryKey
+    val genreId: Long,
+    val genreName: String
 )
