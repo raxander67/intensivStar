@@ -1,5 +1,6 @@
 package ru.rakhman.moviefinder.ui.feed
 
+import android.content.Context
 import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
@@ -8,15 +9,18 @@ import androidx.navigation.navOptions
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function3
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
 import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
-import ru.rakhman.moviefinder.db.convertMovie
+import ru.rakhman.moviefinder.db.*
+import ru.rakhman.moviefinder.db.convertToMovieFavorite
 import ru.rakhman.moviefinder.network.MovieApiClient
 import ru.rakhman.moviefinder.ui.onTextChangedObservable
 import ru.rakhman.moviefinder.ui.extension.ObservableExtension
@@ -68,6 +72,11 @@ class FeedFragment : Fragment() {
     }
 
     private fun downloadAll() {
+        val context: Context? = getContext()
+        val db = context?.let { MovieDatabase.get(it).movieDao() }
+
+
+
         // Запросы по фильмам
         val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies(language = language)
         val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(language = language)
@@ -80,12 +89,21 @@ class FeedFragment : Fragment() {
             Function3 { t1: MoviesResponse, t2: MoviesResponse, t3: MoviesResponse ->
                 return@Function3 listOf(
                     // Получаем список текущих фильмов
+
                     MainCardContainer(R.string.now_played,
                         t1.results.map { movie ->
                             MovieItem(movie) { movie ->
                                 openMovieDetails(
                                     movie
                                 )
+                                val convMovie: MovieFeedFragment = convertToMovieFeedFragment(movie)
+                                val listConvMovie = listOf<MovieFeedFragment>(convMovie)
+                                if (db != null) {
+                                    db.saveMovieFeedFragment(listConvMovie)
+                                        /*.subscribeOn(Schedulers.io())
+                                        .observeOn(AndroidSchedulers.mainThread())
+                                        .subscribe()*/
+                                }
                             }
                         }
                             .toList()

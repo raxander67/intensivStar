@@ -6,8 +6,8 @@ import androidx.room.PrimaryKey
 
 
 
-@Entity(tableName = "Movies")
-data class MovieEntity(
+@Entity(tableName = "movie_favorite")
+data class MovieFavorite(
     @PrimaryKey
     val id: Int?,
     /*val movieGenreId: List<Int>,*/
@@ -29,11 +29,20 @@ data class MovieEntity(
     val backdropPath: String?,
     @ColumnInfo(name = "popularity")
     val popularity: Double?,
-    @ColumnInfo(name = "vote_count")
-    val voteCount: Int?,
     @ColumnInfo(name = "video")
     val video: Boolean?,
-    @ColumnInfo(name = "vote_average")
+    @ColumnInfo(name = "voteAverage")
+    val voteAverage: Double?
+)
+@Entity(tableName = "movie_feed_fragment")
+data class MovieFeedFragment(
+    @PrimaryKey
+    val id: Int?,
+    @ColumnInfo(name = "title")
+    val title: String?,
+    @ColumnInfo(name="poster_path")
+    val posterPath: String? = null,
+    @ColumnInfo(name = "voteAverage")
     val voteAverage: Double?
 )
 @Entity(tableName = "genre")

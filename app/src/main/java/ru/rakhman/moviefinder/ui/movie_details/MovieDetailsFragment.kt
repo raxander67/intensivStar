@@ -6,14 +6,16 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CheckBox
 import android.widget.Toast
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.movie_details_fragment.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.db.MovieDatabase
-import ru.rakhman.moviefinder.db.MovieEntity
-import ru.rakhman.moviefinder.db.convertMovie
+import ru.rakhman.moviefinder.db.MovieFavorite
+import ru.rakhman.moviefinder.db.convertToMovieFavorite
+import timber.log.Timber
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -57,14 +59,14 @@ class MovieDetailsFragment : Fragment() {
     }
 
     fun onCheckboxClicked() {
-
+        Timber.d("writed")
         val checked: Boolean = favorite_checkBox.isChecked
         val context: Context? = getContext()
         val movie = Movie(
             isAdult = false,
             overview = overview,
             releaseDate = "",
-            genreIds = listOf<Int>(1, 2, 3),
+            genreIds = listOf(1, 2, 3),
             id = 123,
             originalTitle = "",
             originalLanguage = "",
@@ -73,27 +75,28 @@ class MovieDetailsFragment : Fragment() {
             popularity = 5.7,
             voteCount = null,
             video = true,
-            voteAverage = 5.9
+            voteAverage = 5.1
         )
         val db = context?.let { MovieDatabase.get(it).movieDao() }
-        /*if (checked) {
+        if (checked) {
             Toast.makeText(
                 context,
                 "Test",
                 Toast.LENGTH_LONG
-            ).show()*/
-        val convMovie: MovieEntity = convertMovie(movie)
-        val listConvMovie = listOf<MovieEntity>(convMovie)
-        if (db != null) {
-            db.save(listConvMovie)
-        } else {
-            // delete this
+            ).show()
+            val convMovie: MovieFavorite = convertToMovieFavorite(movie)
+            val listConvMovie = listOf<MovieFavorite>(convMovie)
+            if (db != null) {
+                db.saveMovieFavorite(listConvMovie)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe()
+            } else {
+                // delete this
 
+            }
         }
-
-
     }
-
 
     companion object {
 

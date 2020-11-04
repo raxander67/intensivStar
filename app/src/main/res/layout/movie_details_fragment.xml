@@ -47,6 +47,7 @@
                 android:id="@+id/favorite_checkBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
                 android:background="@color/cardview_light_background"
                 android:text="@string/movie_save"
                 android:textAlignment="textEnd" />

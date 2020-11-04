@@ -4,8 +4,8 @@ package ru.rakhman.moviefinder.db
 import ru.rakhman.moviefinder.data.Movie
 
 
-fun convertMovie(movie: Movie) : MovieEntity {
-    return MovieEntity(
+fun convertToMovieFavorite(movie: Movie) : MovieFavorite {
+    return MovieFavorite(
         movie.id,
         /*movie.genreIds,*/
         movie.title,
@@ -17,8 +17,16 @@ fun convertMovie(movie: Movie) : MovieEntity {
         movie.originalLanguage,
         movie.backdropPath,
         movie.popularity,
-        movie.voteCount,
         movie.video,
         movie.voteAverage
     )
 }
+fun convertToMovieFeedFragment(movie: Movie) : MovieFeedFragment {
+    return MovieFeedFragment(
+        movie.id,
+        movie.title,
+        movie.posterPath,
+        movie.voteAverage
+    )
+}
+

@@ -5,19 +5,20 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [MovieEntity::class,Genre::class], version = 1)
-abstract class MovieDatabase:RoomDatabase() {
+@Database(entities = [MovieFavorite::class, MovieFeedFragment::class, Genre::class], version = 1)
+abstract class MovieDatabase : RoomDatabase() {
     abstract fun movieDao(): MovieDAO
 
-    companion object{
-        private var instance: MovieDatabase?=null
+    companion object {
+        private var instance: MovieDatabase? = null
 
         @Synchronized
-        fun get(context: Context):MovieDatabase{
-            if (instance==null){
-                instance= Room.databaseBuilder(context.applicationContext,
-                    MovieDatabase::class.java,"MovieDatabase")
-                    .allowMainThreadQueries()
+        fun get(context: Context): MovieDatabase {
+            if (instance == null) {
+                instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    MovieDatabase::class.java, "MovieDatabase"
+                )
                     .build()
             }
             return instance!!
