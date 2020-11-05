@@ -15,6 +15,9 @@ interface MovieDAO {
     @Query("SELECT * FROM movie_favorite ORDER BY title ASC")
     fun getMovieFavorite(): Observable<List<MovieFavorite>>
 
+}
+@Dao
+interface MovieFF {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun saveMovieFeedFragment(movie:List<MovieFeedFragment>): Completable
+    fun saveMovieFeedFragment(movie: List<MovieFeedFragment>): Completable
 }

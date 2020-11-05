@@ -21,7 +21,15 @@ fun convertToMovieFavorite(movie: Movie) : MovieFavorite {
         movie.voteAverage
     )
 }
-fun convertToMovieFeedFragment(movie: Movie) : MovieFeedFragment {
+fun convertToListMovieFeedFragment(movies: List<Movie>): List<MovieFeedFragment> {
+    var convMovies= mutableListOf<MovieFeedFragment>()
+
+
+    for(movie in movies)
+        convMovies.add(convertToMovieFeedFragment(movie))
+    return convMovies
+}
+fun convertToMovieFeedFragment(movie: Movie) : MovieFeedFragment{
     return MovieFeedFragment(
         movie.id,
         movie.title,

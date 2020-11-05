@@ -8,6 +8,7 @@ import androidx.room.RoomDatabase
 @Database(entities = [MovieFavorite::class, MovieFeedFragment::class, Genre::class], version = 1)
 abstract class MovieDatabase : RoomDatabase() {
     abstract fun movieDao(): MovieDAO
+    abstract fun movieFF(): MovieFF
 
     companion object {
         private var instance: MovieDatabase? = null

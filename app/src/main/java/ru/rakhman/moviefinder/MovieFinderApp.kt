@@ -5,10 +5,12 @@ import timber.log.Timber
 
 class MovieFinderApp : Application() {
 
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         initDebugTools()
+
     }
     private fun initDebugTools() {
         if (BuildConfig.DEBUG) {
