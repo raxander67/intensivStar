@@ -20,7 +20,7 @@ class MoviePreviewItem(
         }
         // TODO Получать из модели
         Picasso.get()
-            .load("https://www.kinopoisk.ru/images/film_big/1143242.jpg")
+            .load(content.posterPath)
             .into(viewHolder.image_preview)
     }
 }

@@ -8,8 +8,10 @@ import androidx.navigation.navOptions
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function3
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
 import kotlinx.android.synthetic.main.search_toolbar.view.*
@@ -74,18 +76,20 @@ class FeedFragment : Fragment() {
         val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(language = language)
         val getPopularMovies = MovieApiClient.apiClient.getPopularMovies(language = language)
 
-        var listConvMovie: List<MovieFeedFragment>? = null
 
         getPopularMovies
-            .compose(SingleExtension())
-            .map{ listConvMovie= convertToListMovieFeedFragment(it.results) }
-            .subscribe{ it->val db = context?.let { MovieDatabase.get(it).movieFF() }
-                if (db != null) {
-                    listConvMovie?.let { it ->
-                        db.saveMovieFeedFragment(it)
-                    }
+            .map { convertToListDbMovieFeedFragment(it.results) }
+            .flatMapCompletable { MovieDatabase.get(requireContext()).movieFF().saveMovieFeedFragment(it) }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                Timber.d("Success")
+            },
+                {
+                    Timber.e("Error $it")
                 }
-            }
+                )
+
 
         compositeDisposable.add(Single.zip(
             getNowPlayedMovies,
@@ -162,9 +166,15 @@ class FeedFragment : Fragment() {
         }
 
         val bundle = Bundle()
-
+        movie.id?.let { bundle.putInt(MOVIE_ID, it) }
         bundle.putString(TILE, movie.title)
+        bundle.putString(POSTER_PATH, movie.posterPath)
         bundle.putString(OVERVIEW, movie.overview)
+        bundle.putString(RELEASE_DATE, movie.releaseDate)
+        bundle.putString(ORIGINAL_TITLE, movie.originalTitle)
+        bundle.putString(ORIGINAL_LANGUAGE, movie.originalLanguage)
+        movie.voteAverage?.let { bundle.putDouble(VOTE_AVERAGE, it) }
+
         findNavController().navigate(R.id.movie_details_fragment, bundle, options)
     }
 
@@ -198,7 +208,14 @@ class FeedFragment : Fragment() {
     companion object {
 
         const val TILE = "title"
+        const val MOVIE_ID = "movie_id"
+        const val VOTE_AVERAGE = "voteAverage"
         const val OVERVIEW = "overview"
+        const val POSTER_PATH="posterPath"
+        const val RELEASE_DATE="releaseDate"
+        const val ORIGINAL_TITLE="originalTitle"
+        const val ORIGINAL_LANGUAGE="originalLanguage"
+
         const val SEARCH = "search"
     }
 }

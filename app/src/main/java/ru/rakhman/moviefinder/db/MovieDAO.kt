@@ -20,4 +20,7 @@ interface MovieDAO {
 interface MovieFF {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun saveMovieFeedFragment(movie: List<MovieFeedFragment>): Completable
+
+    @Delete
+    fun deleteMovieFeedFragment(movie: MovieFeedFragment): Completable
 }

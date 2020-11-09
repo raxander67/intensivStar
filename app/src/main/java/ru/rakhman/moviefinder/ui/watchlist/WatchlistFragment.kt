@@ -8,8 +8,15 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.GridLayoutManager
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_watchlist.movies_recycler_view
 import ru.rakhman.moviefinder.R
+import ru.rakhman.moviefinder.db.MovieDAO
+import ru.rakhman.moviefinder.db.MovieDatabase
+import ru.rakhman.moviefinder.db.convDbMovFavToMovie
+import ru.rakhman.moviefinder.db.convertDbMoviesFavoriteToMovies
+import timber.log.Timber
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -41,18 +48,40 @@ class WatchlistFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         movies_recycler_view.layoutManager = GridLayoutManager(context, 4)
-        /*movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
+        movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
 
-        val moviesList =
-            MockRepository.getMovies().map {
-                MoviePreviewItem(
-                    it
-                ) { movie -> }
-            }.toList()
+        val db: MovieDatabase = MovieDatabase.get(requireContext())
+        db.movieDao()
+            .getMovieFavorite()
+            .map { convertDbMoviesFavoriteToMovies(it) }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                val moviesList =
+                    it.map {
+                        MoviePreviewItem(
+                            it
+                        ) { movie -> }
+                    }.toList()
+                movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
+                movies_recycler_view.adapter = adapter.apply { addAll(moviesList) }
+                Timber.d("Success")
+            },
+                {
+                    Timber.e("Error $it")
+                })
 
-        movies_recycler_view.adapter = adapter.apply { addAll(moviesList) }*/
+
+        /*val moviesList =convertDbMoviesFavoriteToMovies(getMovieFavorite)
+        .map {
+             MoviePreviewItem(
+                 it
+             ) { movie -> }
+         }.toList()*/
+
+//        movies_recycler_view.adapter = adapter.apply { addAll(getMovieFavorite) }
+
     }
 
     companion object {
