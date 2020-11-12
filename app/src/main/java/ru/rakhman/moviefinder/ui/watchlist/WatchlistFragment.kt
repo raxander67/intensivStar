@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.GridLayoutManager
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
+import io.reactivex.ObservableTransformer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_watchlist.movies_recycler_view
@@ -16,6 +17,8 @@ import ru.rakhman.moviefinder.db.MovieDAO
 import ru.rakhman.moviefinder.db.MovieDatabase
 import ru.rakhman.moviefinder.db.convDbMovFavToMovie
 import ru.rakhman.moviefinder.db.convertDbMoviesFavoriteToMovies
+import ru.rakhman.moviefinder.ui.extension.CompletableExtension
+import ru.rakhman.moviefinder.ui.extension.ObservableExtension
 import timber.log.Timber
 
 private const val ARG_PARAM1 = "param1"
@@ -55,8 +58,7 @@ class WatchlistFragment : Fragment() {
         db.movieDao()
             .getMovieFavorite()
             .map { convertDbMoviesFavoriteToMovies(it) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+            .compose(ObservableExtension())
             .subscribe({
                 val moviesList =
                     it.map {
@@ -64,23 +66,13 @@ class WatchlistFragment : Fragment() {
                             it
                         ) { movie -> }
                     }.toList()
-                movies_recycler_view.adapter = adapter.apply { addAll(listOf()) }
+                adapter.clear()
                 movies_recycler_view.adapter = adapter.apply { addAll(moviesList) }
                 Timber.d("Success")
             },
                 {
                     Timber.e("Error $it")
                 })
-
-
-        /*val moviesList =convertDbMoviesFavoriteToMovies(getMovieFavorite)
-        .map {
-             MoviePreviewItem(
-                 it
-             ) { movie -> }
-         }.toList()*/
-
-//        movies_recycler_view.adapter = adapter.apply { addAll(getMovieFavorite) }
 
     }
 

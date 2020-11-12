@@ -2,7 +2,9 @@ package ru.rakhman.moviefinder.db
 
 import androidx.room.*
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 
 @Dao
 interface MovieDAO {
@@ -14,6 +16,10 @@ interface MovieDAO {
 
     @Query("SELECT * FROM movie_favorite ORDER BY title ASC")
     fun getMovieFavorite(): Observable<List<MovieFavorite>>
+
+    @Transaction
+    @Query("SELECT * FROM movie_favorite WHERE id = :id")
+    fun loadById(id: Int): Single<MovieFavorite?>
 
 }
 @Dao

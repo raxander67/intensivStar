@@ -14,20 +14,16 @@ import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.db.MovieDatabase
 import ru.rakhman.moviefinder.db.MovieFavorite
+import ru.rakhman.moviefinder.db.convertDbMoviesFavoriteToMovies
 import ru.rakhman.moviefinder.db.convertToDbMovieFavorite
+import ru.rakhman.moviefinder.ui.extension.CompletableExtension
+import ru.rakhman.moviefinder.ui.extension.SingleExtension
+import ru.rakhman.moviefinder.ui.feed.FeedFragment
 import timber.log.Timber
 
-private const val ARG_PARAM1 = "param1"
+/*private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
-
-private const val TILE = "title"
-private const val OVERVIEW = "overview"
-private const val MOVIE_ID = "movie_id"
-private const val VOTE_AVERAGE = "voteAverage"
-private const val POSTER_PATH="posterPath"
-private const val RELEASE_DATE="releaseDate"
-private const val ORIGINAL_TITLE="originalTitle"
-private const val ORIGINAL_LANGUAGE="originalLanguage"
+*/
 
 class MovieDetailsFragment : Fragment() {
 
@@ -36,18 +32,19 @@ class MovieDetailsFragment : Fragment() {
     private var title: String? = null
     private var overview: String? = null
     private var movie_id: Int? = null
-    private var voteAverage:Double?=null
+    private var voteAverage: Double? = null
     private var posterPath: String? = null
     private var releaseDate: String? = null
     private var originalTitle: String? = null
     private var originalLanguage: String? = null
+    private val db by lazy { MovieDatabase.get(requireContext()).movieDao() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
+        /*arguments?.let {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
-        }
+        }*/
     }
 
     override fun onCreateView(
@@ -61,33 +58,61 @@ class MovieDetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        title = requireArguments().getString(TILE)
-        overview = requireArguments().getString(OVERVIEW)
-        movie_id = requireArguments().getInt(MOVIE_ID)
-        voteAverage= requireArguments().getDouble(VOTE_AVERAGE)
-        posterPath= requireArguments().getString(POSTER_PATH)
-        releaseDate= requireArguments().getString(RELEASE_DATE)
-        originalTitle= requireArguments().getString(ORIGINAL_TITLE)
-        originalLanguage= requireArguments().getString(ORIGINAL_LANGUAGE)
-
-
+        title = requireArguments().getString(FeedFragment.TILE)
+        overview = requireArguments().getString(FeedFragment.OVERVIEW)
+        movie_id = requireArguments().getInt(FeedFragment.MOVIE_ID)
+        voteAverage = requireArguments().getDouble(FeedFragment.VOTE_AVERAGE)
+        posterPath = requireArguments().getString(FeedFragment.POSTER_PATH)
+        releaseDate = requireArguments().getString(FeedFragment.RELEASE_DATE)
+        originalTitle = requireArguments().getString(FeedFragment.ORIGINAL_TITLE)
+        originalLanguage = requireArguments().getString(FeedFragment.ORIGINAL_LANGUAGE)
 
         title_movie.text = title
         overview_text_view.text = overview
-        original_titel.text=originalTitle
-        original_language.text=originalLanguage
-        movie_rating.rating=voteAverage?.div(2)?.toFloat() ?: 0.0F
-        image_preview
-       // val image_movie: ImageView = findViewById<ImageView>(R.id.image_preview)
+        original_titel.text = originalTitle
+        original_language.text = originalLanguage
+        movie_rating.rating = voteAverage?.div(2)?.toFloat() ?: 0.0F
         Picasso.get().load(posterPath).into(image_preview)
 
-        favorite_checkBox.setOnClickListener { onCheckboxClicked() }
+        // favorite_checkBox.setOnClickListener { insertIntoDb(favorite_checkBox.isChecked) }
+        checkMovieFavorite()
+        favorite_checkBox.setOnCheckedChangeListener { compoundButton, isChecked ->
+            if (isChecked) {
+                saveMovieIntoDb()
+            } else {
+                deleteMovieFromFavorite()
+            }
+        }
     }
 
-    fun onCheckboxClicked() {
-        Timber.d("writed")
-        val checked: Boolean = favorite_checkBox.isChecked
-//        val context: Context? = getContext()
+    private fun deleteMovieFromFavorite() {
+//deleteMovieFavorite
+        val movieFavorite: MovieFavorite= MovieFavorite(
+        movie_id,title,posterPath,false,overview,releaseDate,
+            originalTitle,originalLanguage,"",0.0,true,voteAverage
+        )
+        db.deleteMovieFavorite(movieFavorite)
+            .compose(CompletableExtension())
+            .subscribe ({ favorite_checkBox.setChecked(false) })
+    }
+
+    private fun checkMovieFavorite() {
+
+        db.loadById(movie_id!!)
+            .compose (SingleExtension())
+            .subscribe({
+                // The movie is not in the table 'movie_favorite'
+                Timber.d("Good")
+                favorite_checkBox.setChecked(true)
+            },{
+                //The movie exists in the table 'movie_favorite'
+                favorite_checkBox.setChecked(false)
+                Timber.e("Bad")})
+    }
+
+    private fun saveMovieIntoDb() {
+        Timber.d("saveMovieIntoDb")
+
         val movie = Movie(
             isAdult = false,
             overview = overview,
@@ -103,30 +128,22 @@ class MovieDetailsFragment : Fragment() {
             video = true,
             voteAverage = voteAverage
         )
-        val db = MovieDatabase.get(requireContext())
-            .movieDao()/*context?.let { MovieDatabase.get(it).movieDao() }*/
-        if (checked) {
-//            Toast.makeText( context,"Test", Toast.LENGTH_LONG ).show()
 
-            val convMovie: MovieFavorite = convertToDbMovieFavorite(movie, posterPath!!)
-            val listConvMovie = listOf(convMovie)
-            db.saveMovieFavorite(listConvMovie)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe()
-
-        }
-    }
-
-    companion object {
-
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            MovieDetailsFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+        val convMovie: MovieFavorite = convertToDbMovieFavorite(movie, posterPath!!)
+        val listConvMovie = listOf(convMovie)
+        db.saveMovieFavorite(listConvMovie)
+            .compose(CompletableExtension())
+            .subscribe()
     }
 }
+/*companion object {
+
+    @JStatic
+    fun newInstance(param1: String, param2: String) =
+        MovieDetailsFragment().apply {
+            arguments = Bundle().apply {
+                putString(ARG_PARAM1, param1)
+                putString(ARG_PARAM2, param2)
+            }
+        }
+}*/

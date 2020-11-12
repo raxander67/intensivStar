@@ -27,7 +27,7 @@ import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 class FeedFragment : Fragment() {
-    private val TAG = "FeedFragment"
+
     private val language by lazy { resources.getString(R.string.language) }
     private var compositeDisposable = CompositeDisposable()
     private val adapter by lazy {
@@ -47,8 +47,6 @@ class FeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         executeSearch()
         downloadAll()
-
-        // Test
 
     }
 
