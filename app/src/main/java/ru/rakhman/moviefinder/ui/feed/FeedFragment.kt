@@ -20,6 +20,7 @@ import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
 import ru.rakhman.moviefinder.db.*
 import ru.rakhman.moviefinder.network.MovieApiClient
+import ru.rakhman.moviefinder.ui.extension.CompletableExtension
 import ru.rakhman.moviefinder.ui.onTextChangedObservable
 import ru.rakhman.moviefinder.ui.extension.ObservableExtension
 import ru.rakhman.moviefinder.ui.extension.SingleExtension
@@ -78,8 +79,7 @@ class FeedFragment : Fragment() {
         getPopularMovies
             .map { convertToListDbMovieFeedFragment(it.results) }
             .flatMapCompletable { MovieDatabase.get(requireContext()).movieFF().saveMovieFeedFragment(it) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+            .compose(CompletableExtension())
             .subscribe({
                 Timber.d("Success")
             },
