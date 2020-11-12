@@ -1,27 +1,24 @@
 package ru.rakhman.moviefinder.ui.feed
 
 import android.os.Bundle
-import android.util.Log
 import android.view.*
-import android.view.View.GONE
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.kotlinandroidextensions.GroupieViewHolder
-import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.Function
 import io.reactivex.functions.Function3
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.feed_fragment.*
 import kotlinx.android.synthetic.main.feed_header.*
 import kotlinx.android.synthetic.main.search_toolbar.view.*
 import ru.rakhman.moviefinder.R
 import ru.rakhman.moviefinder.data.Movie
 import ru.rakhman.moviefinder.data.MoviesResponse
-import ru.rakhman.moviefinder.data.mock.MockMovieItem
-import ru.rakhman.moviefinder.data.mock.MockRepository
+import ru.rakhman.moviefinder.db.*
 import ru.rakhman.moviefinder.network.MovieApiClient
 import ru.rakhman.moviefinder.ui.onTextChangedObservable
 import ru.rakhman.moviefinder.ui.extension.ObservableExtension
@@ -30,7 +27,7 @@ import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 class FeedFragment : Fragment() {
-    private val TAG = "FeedFragment"
+
     private val language by lazy { resources.getString(R.string.language) }
     private var compositeDisposable = CompositeDisposable()
     private val adapter by lazy {
@@ -50,6 +47,7 @@ class FeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         executeSearch()
         downloadAll()
+
     }
 
     private fun executeSearch() {
@@ -70,10 +68,26 @@ class FeedFragment : Fragment() {
     }
 
     private fun downloadAll() {
+
         // Запросы по фильмам
         val getNowPlayedMovies = MovieApiClient.apiClient.getNowPlayedMovies(language = language)
         val getUpcomingMovies = MovieApiClient.apiClient.getUpcomingMovies(language = language)
         val getPopularMovies = MovieApiClient.apiClient.getPopularMovies(language = language)
+
+
+        getPopularMovies
+            .map { convertToListDbMovieFeedFragment(it.results) }
+            .flatMapCompletable { MovieDatabase.get(requireContext()).movieFF().saveMovieFeedFragment(it) }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                Timber.d("Success")
+            },
+                {
+                    Timber.e("Error $it")
+                }
+                )
+
 
         compositeDisposable.add(Single.zip(
             getNowPlayedMovies,
@@ -82,6 +96,7 @@ class FeedFragment : Fragment() {
             Function3 { t1: MoviesResponse, t2: MoviesResponse, t3: MoviesResponse ->
                 return@Function3 listOf(
                     // Получаем список текущих фильмов
+
                     MainCardContainer(R.string.now_played,
                         t1.results.map { movie ->
                             MovieItem(movie) { movie ->
@@ -123,6 +138,7 @@ class FeedFragment : Fragment() {
             .subscribe(
                 {
                     movies_recycler_view.adapter = adapter.apply { addAll(it) }
+
                 },
                 {
                     errorLog()
@@ -148,7 +164,15 @@ class FeedFragment : Fragment() {
         }
 
         val bundle = Bundle()
+        movie.id?.let { bundle.putInt(MOVIE_ID, it) }
         bundle.putString(TILE, movie.title)
+        bundle.putString(POSTER_PATH, movie.posterPath)
+        bundle.putString(OVERVIEW, movie.overview)
+        bundle.putString(RELEASE_DATE, movie.releaseDate)
+        bundle.putString(ORIGINAL_TITLE, movie.originalTitle)
+        bundle.putString(ORIGINAL_LANGUAGE, movie.originalLanguage)
+        movie.voteAverage?.let { bundle.putDouble(VOTE_AVERAGE, it) }
+
         findNavController().navigate(R.id.movie_details_fragment, bundle, options)
     }
 
@@ -174,6 +198,7 @@ class FeedFragment : Fragment() {
     }
 
 
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_menu, menu)
     }
@@ -181,6 +206,14 @@ class FeedFragment : Fragment() {
     companion object {
 
         const val TILE = "title"
+        const val MOVIE_ID = "movie_id"
+        const val VOTE_AVERAGE = "voteAverage"
+        const val OVERVIEW = "overview"
+        const val POSTER_PATH="posterPath"
+        const val RELEASE_DATE="releaseDate"
+        const val ORIGINAL_TITLE="originalTitle"
+        const val ORIGINAL_LANGUAGE="originalLanguage"
+
         const val SEARCH = "search"
     }
 }

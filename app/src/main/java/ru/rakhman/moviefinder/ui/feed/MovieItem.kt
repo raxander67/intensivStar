@@ -21,7 +21,6 @@ class MovieItem(
             onClick.invoke(content)
         }
 
-        // TODO Получать из модели  x
         Picasso.get()
             .load(content.posterPath)
             .into(viewHolder.image_preview)

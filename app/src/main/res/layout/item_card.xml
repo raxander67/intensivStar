@@ -20,13 +20,13 @@
             android:layout_marginStart="@dimen/material_margin_normal"
             android:textColor="@color/white"
             android:textSize="18sp"
-            android:layout_toStartOf="@+id/description_text_view"
+            android:layout_toStartOf="@+id/overview_text_view"
             android:textStyle="bold"
             tools:text="Заголовок карточки"
             tools:textColor="@color/white" />
 
         <TextView
-            android:id="@+id/description_text_view"
+            android:id="@+id/overview_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignBaseline="@+id/title_text_view"
